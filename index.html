@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quizzy - Test Interactivo</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        cardBg: '#1e293b',
+                        brandPrimary: '#6366f1',
+                        brandSecondary: '#ec4899',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .glassmorphism {
+            background: #1e293b;
+            border: 1px solid #334155;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden relative">
+
+    <!-- Header / Navbar -->
+    <header class="w-full max-w-5xl mx-auto p-4 sm:p-6 flex justify-between items-center relative z-10">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="showMainMenu()">
+            <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-xl font-bold shadow">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+            <span class="text-2xl font-extrabold tracking-tight text-white">Quizzy</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6 relative z-10 w-full max-w-4xl mx-auto">
+        
+        <!-- ================= 1. MENU PRINCIPAL ================= -->
+        <section id="menuSection" class="w-full animate-fadeIn">
+            <div class="text-center mb-10">
+                <h1 class="text-3xl sm:text-4xl font-extrabold mb-3 tracking-tight text-white">
+                    Elige un test para comenzar
+                </h1>
+                <p class="text-slate-400 text-base max-w-xl mx-auto">
+                    Selecciona una de las opciones para poner a prueba tus conocimientos o descubrir tu perfil.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                <!-- Modo 1: Personalidad -->
+                <div onclick="startQuiz('personality')" class="glassmorphism p-6 sm:p-8 rounded-2xl hover:border-indigo-500 cursor-pointer transition-all duration-200 group flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xl mb-5">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-1 block">Test de Personalidad</span>
+                        <h2 class="text-xl font-bold mb-2 text-white">¿Qué tipo de persona eres?</h2>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                            Responde preguntas sencillas sobre tus hábitos y descubre con qué rol encajas mejor.
+                        </p>
+                    </div>
+                    <div class="flex items-center text-indigo-400 font-semibold text-sm group-hover:translate-x-1 transition-transform">
+                        <span>Empezar</span>
+                        <i class="fa-solid fa-arrow-right ml-2 text-xs"></i>
+                    </div>
+                </div>
+
+                <!-- Modo 2: Trivia -->
+                <div onclick="startQuiz('trivia')" class="glassmorphism p-6 sm:p-8 rounded-2xl hover:border-sky-500 cursor-pointer transition-all duration-200 group flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 text-xl mb-5">
+                            <i class="fa-solid fa-brain"></i>
+                        </div>
+                        <span class="text-xs font-bold text-sky-400 uppercase tracking-wider mb-1 block">Test de Conocimientos</span>
+                        <h2 class="text-xl font-bold mb-2 text-white">Cultura Pop & Cine</h2>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                            Demuestra cuánto sabes sobre películas, series y tecnología en un reto rápido.
+                        </p>
+                    </div>
+                    <div class="flex items-center text-sky-400 font-semibold text-sm group-hover:translate-x-1 transition-transform">
+                        <span>Empezar</span>
+                        <i class="fa-solid fa-arrow-right ml-2 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= 2. INTERFAZ DEL QUIZ ================= -->
+        <section id="quizSection" class="w-full hidden animate-fadeIn">
+            <div class="glassmorphism rounded-2xl p-6 sm:p-8 relative">
+                
+                <!-- Barra Superior (Progreso y Timer) -->
+                <div class="flex items-center justify-between gap-4 mb-6">
+                    <div class="flex-grow">
+                        <div class="flex justify-between text-xs font-semibold text-slate-400 mb-2">
+                            <span id="quizCategoryLabel" class="uppercase tracking-wider text-indigo-400">Categoría</span>
+                            <span id="progressText">Pregunta 1 de 5</span>
+                        </div>
+                        <!-- Barra de progreso -->
+                        <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="progressBar" class="h-full bg-indigo-500 transition-all duration-300 w-0"></div>
+                        </div>
+                    </div>
+
+                    <!-- Temporizador -->
+                    <div id="timerContainer" class="hidden flex-shrink-0 flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-slate-800 border border-slate-700">
+                        <span id="timerText" class="text-base font-bold text-slate-200">15</span>
+                        <span class="text-[8px] uppercase tracking-wider text-slate-400">seg</span>
+                    </div>
+                </div>
+
+                <!-- Contenedor de la Pregunta -->
+                <div class="mb-6 min-h-[80px]">
+                    <h2 id="questionText" class="text-lg sm:text-xl font-bold text-white leading-snug">
+                        Cargando pregunta...
+                    </h2>
+                </div>
+
+                <!-- Lista de Opciones -->
+                <div id="optionsContainer" class="grid gap-3">
+                    <!-- Las opciones se renderizan dinámicamente con JS -->
+                </div>
+
+                <!-- Footer del Quiz -->
+                <div class="mt-6 pt-4 border-t border-slate-800/80 flex justify-between items-center text-xs text-slate-400">
+                    <button onclick="showMainMenu()" class="hover:text-white transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-arrow-left"></i> Salir al menú
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= 3. PANTALLA DE RESULTADOS ================= -->
+        <section id="resultsSection" class="w-full hidden animate-fadeIn">
+            <div class="glassmorphism rounded-2xl p-6 sm:p-10 text-center relative max-w-xl mx-auto">
+                <div class="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center text-2xl text-white mx-auto mb-5">
+                    <i id="resultIcon" class="fa-solid fa-trophy"></i>
+                </div>
+
+                <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-1 block">Resultado</span>
+                <h2 id="resultTitle" class="text-2xl sm:text-3xl font-extrabold text-white mb-2">¡Completado!</h2>
+                <p id="resultDescription" class="text-slate-300 text-sm sm:text-base mb-6 leading-relaxed max-w-md mx-auto">
+                    Has completado el test exitosamente.
+                </p>
+
+                <!-- Tarjeta de Desglose -->
+                <div id="resultScoreCard" class="bg-slate-900/80 rounded-xl p-5 border border-slate-800 mb-6 max-w-xs mx-auto">
+                    <div id="scoreDisplay" class="text-3xl font-bold text-indigo-400 mb-1">0 / 0</div>
+                    <p id="scoreSubtext" class="text-xs text-slate-400 uppercase tracking-wider">Puntuación final</p>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                    <button onclick="restartCurrentQuiz()" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold text-white text-sm transition-colors flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span>Repetir test</span>
+                    </button>
+                    <button onclick="shareResults()" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold text-slate-200 text-sm transition-colors flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-share-nodes"></i>
+                        <span>Copiar resultado</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-5xl mx-auto p-4 text-center text-xs text-slate-500 relative z-10 border-t border-slate-800/60 mt-auto">
+        <p>Gloria Fonseca · Karomy Gomez · Brenda Rebollar · Jimena Serrano</p>
+    </footer>
+
+    <!-- Toast de Notificación -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2.5 rounded-xl border border-slate-700 shadow-lg text-sm font-medium flex items-center space-x-2 opacity-0 pointer-events-none transition-all duration-200 z-50">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg">Copiado al portapapeles</span>
+    </div>
+
+    <!-- ================= SCRIPT PRINCIPAL ================= -->
+    <script>
+        // --- BASE DE DATOS DE LOS QUIZZES ---
+        const quizData = {
+            personality: {
+                title: "¿Qué tipo de persona eres?",
+                category: "Test de Personalidad",
+                hasTimer: false,
+                questions: [
+                    {
+                        question: "Cuando inicias un nuevo proyecto, ¿qué es lo primero que haces?",
+                        options: [
+                            { text: "Diseño la interfaz cuidando cada detalle visual y color.", trait: "frontend" },
+                            { text: "Planifico la estructura, los datos y cómo funcionará por dentro.", trait: "backend" },
+                            { text: "Busco herramientas o tecnología nueva para innovar.", trait: "innovator" },
+                            { text: "Organizo las tareas y los tiempos para entregar a tiempo.", trait: "lead" }
+                        ]
+                    },
+                    {
+                        question: "¿Cuál de estas opciones va más contigo?",
+                        options: [
+                            { text: "Crear cosas visuales y con buen acabado.", trait: "frontend" },
+                            { text: "Resolver problemas lógicos y estructurar ideas.", trait: "backend" },
+                            { text: "Probar cosas nuevas y experimentar constantemente.", trait: "innovator" },
+                            { text: "Coordinar actividades y mantener el orden.", trait: "lead" }
+                        ]
+                    },
+                    {
+                        question: "Si algo no sale como esperabas, ¿cómo lo solucionas?",
+                        options: [
+                            { text: "Ajusto la presentación o el mensaje para que se entienda mejor.", trait: "frontend" },
+                            { text: "Analizo detalladamente el problema hasta encontrar la falla.", trait: "backend" },
+                            { text: "Intento un camino completamente diferente o no tradicional.", trait: "innovator" },
+                            { text: "Pido apoyo o me organizo con otros para resolverlo rápido.", trait: "lead" }
+                        ]
+                    },
+                    {
+                        question: "¿Cómo describirías tu espacio de trabajo o estudio ideal?",
+                        options: [
+                            { text: "Inspirador, bien iluminado y ordenado visualmente.", trait: "frontend" },
+                            { text: "Simple, funcional y con todo a la mano.", trait: "backend" },
+                            { text: "Lleno de herramientas, notas y cosas por probar.", trait: "innovator" },
+                            { text: "Estructurado, con metas del día visibles.", trait: "lead" }
+                        ]
+                    }
+                ],
+                results: {
+                    frontend: {
+                        title: "Perfil Creativo 🎨",
+                        icon: "fa-palette",
+                        desc: "Te enfocas en la estética, la presentación y la experiencia de las personas. Tienes ojo para el detalle visual."
+                    },
+                    backend: {
+                        title: "Perfil Analítico ⚙️",
+                        icon: "fa-gears",
+                        desc: "Te gusta entender cómo funcionan las cosas en su interior. Destacas por tu lógica y capacidad de resolución."
+                    },
+                    innovator: {
+                        title: "Perfil Explorador 🚀",
+                        icon: "fa-lightbulb",
+                        desc: "Siempre estás buscando probar herramientas nuevas e ideas fuera de lo común. No le temes al cambio."
+                    },
+                    lead: {
+                        title: "Perfil Organizador 📋",
+                        icon: "fa-list-check",
+                        desc: "Tienes una visión ordenada de las cosas. Sabes estructurar pasos claros para alcanzar objetivos."
+                    }
+                }
+            },
+            trivia: {
+                title: "Cultura Pop & Cine",
+                category: "Test de Conocimientos",
+                hasTimer: true,
+                timerSeconds: 15,
+                questions: [
+                    {
+                        question: "¿Qué lenguaje se utiliza principalmente para darle estilo y diseño a una página web?",
+                        options: [
+                            { text: "HTML", correct: false },
+                            { text: "CSS", correct: true },
+                            { text: "Python", correct: false },
+                            { text: "SQL", correct: false }
+                        ]
+                    },
+                    {
+                        question: "En la película 'The Matrix' (1999), ¿de qué color es la pastilla que elige Neo?",
+                        options: [
+                            { text: "Azul", correct: false },
+                            { text: "Verde", correct: false },
+                            { text: "Roja", correct: true },
+                            { text: "Amarilla", correct: false }
+                        ]
+                    },
+                    {
+                        question: "¿Cuál es el nombre del famoso androide astromecánico azul y blanco en Star Wars?",
+                        options: [
+                            { text: "C-3PO", correct: false },
+                            { text: "BB-8", correct: false },
+                            { text: "R2-D2", correct: true },
+                            { text: "Wall-E", correct: false }
+                        ]
+                    },
+                    {
+                        question: "¿Qué significan las siglas 'WWW' en una dirección de internet?",
+                        options: [
+                            { text: "World Wide Web", correct: true },
+                            { text: "Web World Wide", correct: false },
+                            { text: "World Web Wifi", correct: false },
+                            { text: "Wide Web World", correct: false }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        // --- ESTADO DE LA APLICACIÓN ---
+        let currentMode = null;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let traitCounts = {};
+        let timerInterval = null;
+        let timeLeft = 15;
+        let selectedOptionIndex = null;
+
+        // --- ELEMENTOS DEL DOM ---
+        const menuSection = document.getElementById('menuSection');
+        const quizSection = document.getElementById('quizSection');
+        const resultsSection = document.getElementById('resultsSection');
+
+        const quizCategoryLabel = document.getElementById('quizCategoryLabel');
+        const progressText = document.getElementById('progressText');
+        const progressBar = document.getElementById('progressBar');
+        const questionText = document.getElementById('questionText');
+        const optionsContainer = document.getElementById('optionsContainer');
+        const timerContainer = document.getElementById('timerContainer');
+        const timerText = document.getElementById('timerText');
+
+        const resultTitle = document.getElementById('resultTitle');
+        const resultDescription = document.getElementById('resultDescription');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const scoreSubtext = document.getElementById('scoreSubtext');
+        const resultIcon = document.getElementById('resultIcon');
+
+        // --- FUNCIONES DE NAVEGACIÓN ---
+        function showMainMenu() {
+            clearInterval(timerInterval);
+            quizSection.classList.add('hidden');
+            resultsSection.classList.add('hidden');
+            menuSection.classList.remove('hidden');
+        }
+
+        function startQuiz(mode) {
+            currentMode = mode;
+            currentQuestionIndex = 0;
+            score = 0;
+            traitCounts = { frontend: 0, backend: 0, innovator: 0, lead: 0 };
+            
+            menuSection.classList.add('hidden');
+            resultsSection.classList.add('hidden');
+            quizSection.classList.remove('hidden');
+
+            const quiz = quizData[currentMode];
+            quizCategoryLabel.textContent = quiz.category;
+
+            if (quiz.hasTimer) {
+                timerContainer.classList.remove('hidden');
+            } else {
+                timerContainer.classList.add('hidden');
+            }
+
+            renderQuestion();
+        }
+
+        // --- RENDERIZADO DE PREGUNTAS ---
+        function renderQuestion() {
+            clearInterval(timerInterval);
+            selectedOptionIndex = null;
+
+            const quiz = quizData[currentMode];
+            const q = quiz.questions[currentQuestionIndex];
+
+            const total = quiz.questions.length;
+            progressText.textContent = `Pregunta ${currentQuestionIndex + 1} de ${total}`;
+            const progressPercent = ((currentQuestionIndex + 1) / total) * 100;
+            progressBar.style.width = `${progressPercent}%`;
+
+            questionText.textContent = q.question;
+            optionsContainer.innerHTML = '';
+
+            if (quiz.hasTimer) {
+                timeLeft = quiz.timerSeconds;
+                timerText.textContent = timeLeft;
+                timerText.classList.remove('text-rose-500');
+                timerInterval = setInterval(handleTimerTick, 1000);
+            }
+
+            q.options.forEach((opt, idx) => {
+                const button = document.createElement('button');
+                button.className = `w-full text-left p-4 rounded-xl bg-slate-800/80 border border-slate-700/80 hover:border-slate-500 hover:bg-slate-800 transition-all flex items-center justify-between group cursor-pointer`;
+                
+                button.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="w-7 h-7 rounded-lg bg-slate-700 text-slate-300 font-semibold text-xs flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                            ${String.fromCharCode(65 + idx)}
+                        </span>
+                        <span class="text-sm font-medium text-slate-200 group-hover:text-white">${opt.text}</span>
+                    </div>
+                `;
+
+                button.onclick = () => selectOption(idx, button);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        // --- SELECCIÓN Y FEEDBACK ---
+        function selectOption(index, buttonEl) {
+            if (selectedOptionIndex !== null) return;
+            selectedOptionIndex = index;
+            clearInterval(timerInterval);
+
+            const quiz = quizData[currentMode];
+            const q = quiz.questions[currentQuestionIndex];
+            const selectedOpt = q.options[index];
+            const allButtons = optionsContainer.querySelectorAll('button');
+
+            if (currentMode === 'personality') {
+                buttonEl.classList.add('border-indigo-500', 'bg-indigo-500/10');
+                traitCounts[selectedOpt.trait] = (traitCounts[selectedOpt.trait] || 0) + 1;
+                setTimeout(() => nextQuestion(), 300);
+
+            } else if (currentMode === 'trivia') {
+                if (selectedOpt.correct) {
+                    score++;
+                    buttonEl.classList.remove('bg-slate-800/80', 'border-slate-700/80');
+                    buttonEl.classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-300');
+                } else {
+                    buttonEl.classList.remove('bg-slate-800/80', 'border-slate-700/80');
+                    buttonEl.classList.add('bg-rose-500/20', 'border-rose-500', 'text-rose-300');
+
+                    q.options.forEach((opt, idx) => {
+                        if (opt.correct) {
+                            allButtons[idx].classList.add('border-emerald-500/60', 'bg-emerald-500/10');
+                        }
+                    });
+                }
+
+                setTimeout(() => nextQuestion(), 1000);
+            }
+        }
+
+        function handleTimerTick() {
+            timeLeft--;
+            timerText.textContent = timeLeft;
+
+            if (timeLeft <= 5) {
+                timerText.classList.add('text-rose-500');
+            }
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                const allButtons = optionsContainer.querySelectorAll('button');
+                const q = quizData.trivia.questions[currentQuestionIndex];
+                
+                q.options.forEach((opt, idx) => {
+                    if (opt.correct) {
+                        allButtons[idx].classList.add('border-emerald-500', 'bg-emerald-500/20');
+                    }
+                });
+
+                setTimeout(() => nextQuestion(), 1000);
+            }
+        }
+
+        function nextQuestion() {
+            const quiz = quizData[currentMode];
+            if (currentQuestionIndex < quiz.questions.length - 1) {
+                currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            quizSection.classList.add('hidden');
+            resultsSection.classList.remove('hidden');
+
+            const quiz = quizData[currentMode];
+
+            if (currentMode === 'personality') {
+                let topTrait = 'frontend';
+                let maxCount = -1;
+                for (const trait in traitCounts) {
+                    if (traitCounts[trait] > maxCount) {
+                        maxCount = traitCounts[trait];
+                        topTrait = trait;
+                    }
+                }
+
+                const resultInfo = quiz.results[topTrait];
+                resultTitle.textContent = resultInfo.title;
+                resultDescription.textContent = resultInfo.desc;
+                resultIcon.className = `fa-solid ${resultInfo.icon}`;
+                
+                scoreDisplay.textContent = "100%";
+                scoreSubtext.textContent = "Resultado del análisis";
+
+                triggerConfetti();
+
+            } else if (currentMode === 'trivia') {
+                const total = quiz.questions.length;
+                const percentage = Math.round((score / total) * 100);
+
+                scoreDisplay.textContent = `${score} / ${total}`;
+                scoreSubtext.textContent = `Aciertos totales (${percentage}%)`;
+
+                if (percentage >= 75) {
+                    resultTitle.textContent = "¡Excelente trabajo!";
+                    resultDescription.textContent = "Respondiste la mayoría de las preguntas correctamente.";
+                    resultIcon.className = "fa-solid fa-trophy";
+                    triggerConfetti();
+                } else if (percentage >= 50) {
+                    resultTitle.textContent = "¡Buen resultado!";
+                    resultDescription.textContent = "Tienes buenos conocimientos generales.";
+                    resultIcon.className = "fa-solid fa-star";
+                } else {
+                    resultTitle.textContent = "Puedes mejorar";
+                    resultDescription.textContent = "Vuelve a intentarlo para subir tu puntuación.";
+                    resultIcon.className = "fa-solid fa-rotate";
+                }
+            }
+        }
+
+        function restartCurrentQuiz() {
+            startQuiz(currentMode);
+        }
+
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 50,
+                    spread: 60,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        function shareResults() {
+            const textToShare = `¡Completé el test en Quizzy!`;
+            
+            if (navigator.clipboard) {
+                const dummy = document.createElement('input');
+                document.body.appendChild(dummy);
+                dummy.value = textToShare;
+                dummy.select();
+                document.execCommand('copy');
+                document.body.removeChild(dummy);
+                showToast("¡Resultado copiado!");
+            } else {
+                showToast("¡Resultado listo!");
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toastMsg.textContent = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
